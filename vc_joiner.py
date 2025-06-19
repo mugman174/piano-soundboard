@@ -1,4 +1,5 @@
-import discord, asyncio
+import discord
+import asyncio
 from config import TOKENS, GUILD, OWNER
 
 
