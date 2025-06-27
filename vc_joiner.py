@@ -3,32 +3,28 @@ import asyncio
 from config import TOKENS, GUILD, OWNER
 
 
-def make_bot():
-    bot = discord.Client(intents=discord.Intents.default())
-
-    @bot.event
-    async def on_ready():
-        print(f"{bot.user} awake")
-        c = bot.get_guild(GUILD).get_member(OWNER).voice.channel
+class Bot(discord.Client):
+    async def on_ready(self):
+        print(f"{self.user} awake")
+        c = self.get_guild(GUILD).get_member(OWNER).voice.channel
         await c.connect()
-
-        def check(m):
-            return m.channel == c and m.content == "!exit" and m.author.id == OWNER
-
-        await bot.wait_for("message", check=check)
-        print(f"{bot.user} going gentle into that good night")
-        await bot.close()
-
-    return bot
 
 
 async def main():
     bots = []
-    async with asyncio.TaskGroup() as tg:
-        for token in TOKENS:
-            bot = make_bot()
-            bots.append(bot)
-            tg.create_task(bot.start(token))
+    try:
+        async with asyncio.TaskGroup() as tg:
+            for token in TOKENS:
+                bot = Bot(intents=discord.Intents.default())
+                bots.append(bot)
+                tg.create_task(bot.start(token))
+    except asyncio.exceptions.CancelledError:
+        print("Exiting cleanly")
+        async with asyncio.TaskGroup() as tg:
+            for bot in bots:
+                tg.create_task(bot.close())
+            await asyncio.sleep(2)
+            raise
 
 
 asyncio.run(main())
